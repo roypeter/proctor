@@ -120,6 +120,7 @@ func (c *client) ExecuteProc(name string, args map[string]string) (string, error
 	req.Header.Add(utility.UserEmailHeaderKey, c.emailId)
 	req.Header.Add(utility.AccessTokenHeaderKey, c.accessToken)
 	req.Header.Add(utility.ClientVersionHeaderKey, c.clientVersion)
+	req.Header.Add(utility.ProcName, name)
 	resp, err := client.Do(req)
 
 	if err != nil {
@@ -208,16 +209,19 @@ func buildNetworkError(err error) error {
 }
 
 func buildHTTPError(c *client, resp *http.Response) error {
-	if resp.StatusCode == http.StatusUnauthorized {
+	switch responseCode := resp.StatusCode; responseCode {
+	case http.StatusUnauthorized:
 		if c.emailId == "" || c.accessToken == "" {
 			return fmt.Errorf("%s\n%s", utility.UnauthorizedErrorHeader, utility.UnauthorizedErrorMissingConfig)
 		}
 		return fmt.Errorf("%s\n%s", utility.UnauthorizedErrorHeader, utility.UnauthorizedErrorInvalidConfig)
-	} else if resp.StatusCode == http.StatusBadRequest {
+	case http.StatusBadRequest:
 		body, _ := ioutil.ReadAll(resp.Body)
 		bodyString := string(body)
 		return fmt.Errorf(bodyString)
-	} else {
+	case http.StatusForbidden:
+		return fmt.Errorf(utility.ForbiddenErrorHeader)
+	default:
 		return fmt.Errorf("%s\nStatus Code: %d, %s", utility.GenericResponseErrorHeader, resp.StatusCode, http.StatusText(resp.StatusCode))
 	}
 }

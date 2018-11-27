@@ -276,6 +276,7 @@ func (s *ClientTestSuite) TestExecuteProc() {
 				utility.UserEmailHeaderKey:     []string{"proctor@example.com"},
 				utility.AccessTokenHeaderKey:   []string{"access-token"},
 				utility.ClientVersionHeaderKey: []string{version.ClientVersion},
+				utility.ProcName:               []string{"run-sample"},
 			},
 		),
 	)
@@ -311,6 +312,7 @@ func (s *ClientTestSuite) TestExecuteProcInternalServerError() {
 				utility.UserEmailHeaderKey:     []string{"proctor@example.com"},
 				utility.AccessTokenHeaderKey:   []string{"access-token"},
 				utility.ClientVersionHeaderKey: []string{version.ClientVersion},
+				utility.ProcName:               []string{"run-sample"},
 			},
 		),
 	)
@@ -342,6 +344,7 @@ func (s *ClientTestSuite) TestExecuteProcUnAuthorized() {
 				utility.UserEmailHeaderKey:     []string{"proctor@example.com"},
 				utility.AccessTokenHeaderKey:   []string{"access-token"},
 				utility.ClientVersionHeaderKey: []string{version.ClientVersion},
+				utility.ProcName:               []string{"run-sample"},
 			},
 		),
 	)
@@ -374,6 +377,7 @@ func (s *ClientTestSuite) TestExecuteProcUnAuthorizedWhenEmailAndAccessTokenNotS
 				utility.UserEmailHeaderKey:     []string{""},
 				utility.AccessTokenHeaderKey:   []string{""},
 				utility.ClientVersionHeaderKey: []string{version.ClientVersion},
+				utility.ProcName:               []string{"run-sample"},
 			},
 		),
 	)
@@ -384,6 +388,39 @@ func (s *ClientTestSuite) TestExecuteProcUnAuthorizedWhenEmailAndAccessTokenNotS
 
 	assert.Equal(t, "", executeProcResponse)
 	assert.Equal(t, "Unauthorized Access!!!\nEMAIL_ID or ACCESS_TOKEN is not present in proctor config file.", err.Error())
+	s.mockConfigLoader.AssertExpectations(t)
+}
+
+func (s *ClientTestSuite) TestExecuteProcUnAuthorizedWhenUserIsNotAllowedToExecuteProc() {
+	t := s.T()
+	proctorConfig := config.ProctorConfig{Host: "proctor.example.com", Email: "proctor@example.com", AccessToken: "access-token"}
+
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+
+	httpmock.RegisterStubRequest(
+		httpmock.NewStubRequest(
+			"POST",
+			"http://"+proctorConfig.Host+"/jobs/execute",
+			func(req *http.Request) (*http.Response, error) {
+				return httpmock.NewStringResponse(403, ""), nil
+			},
+		).WithHeader(
+			&http.Header{
+				utility.UserEmailHeaderKey:     []string{"proctor@example.com"},
+				utility.AccessTokenHeaderKey:   []string{"access-token"},
+				utility.ClientVersionHeaderKey: []string{version.ClientVersion},
+				utility.ProcName:               []string{"run-sample"},
+			},
+		),
+	)
+
+	s.mockConfigLoader.On("Load").Return(proctorConfig, config.ConfigError{}).Once()
+
+	executeProcResponse, err := s.testClient.ExecuteProc("run-sample", map[string]string{"SAMPLE_ARG1": "sample-value"})
+
+	assert.Equal(t, "", executeProcResponse)
+	assert.Equal(t, "Access denied. You are not authorized to perform this action. Please contact proc admin.", err.Error())
 	s.mockConfigLoader.AssertExpectations(t)
 }
 
@@ -406,6 +443,7 @@ func (s *ClientTestSuite) TestExecuteProcsReturnClientSideConnectionError() {
 				utility.UserEmailHeaderKey:     []string{"proctor@example.com"},
 				utility.AccessTokenHeaderKey:   []string{"access-token"},
 				utility.ClientVersionHeaderKey: []string{version.ClientVersion},
+				utility.ProcName:               []string{"run-sample"},
 			},
 		),
 	)

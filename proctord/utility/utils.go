@@ -9,6 +9,7 @@ const GenericListCmdError = "Error fetching list of procs. Please check configur
 const GenericProcCmdError = "Error executing proc. Please check configuration and network connectivity"
 const GenericDescribeCmdError = "Error fetching description of proc. Please check configuration and network connectivity"
 
+const ForbiddenErrorHeader = "Access denied. You are not authorized to perform this action. Please contact proc admin."
 const UnauthorizedErrorHeader = "Unauthorized Access!!!"
 const GenericTimeoutErrorHeader = "Connection Timeout!!!"
 const GenericNetworkErrorHeader = "Network Error!!!"
@@ -36,6 +37,7 @@ const JobSubmissionStatusContextKey = "job_sumission_status"
 const UserEmailHeaderKey = "Email-Id"
 const AccessTokenHeaderKey = "Access-Token"
 const ClientVersionHeaderKey =  "Client-Version"
+const ProcName =  "Proc-Name"
 
 func MergeMaps(mapOne, mapTwo map[string]string) map[string]string {
 	result := make(map[string]string)
